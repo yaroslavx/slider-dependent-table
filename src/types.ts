@@ -1,3 +1,5 @@
+import type Swiper from 'swiper';
+
 export type Feature = {
   id: number;
   value: string;
@@ -12,3 +14,9 @@ export type Item = {
 };
 
 export type Items = Item[];
+
+export type TSwiper = Swiper & {
+  slides: {
+    swiperSlideSize: number;
+  }[];
+};
