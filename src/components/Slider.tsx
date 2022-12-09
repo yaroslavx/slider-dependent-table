@@ -5,13 +5,17 @@ import { Items, TSwiper } from "../types";
 
 type SliderProps = {
     items: Items
+    offsetX: number
     setSlideWidth: Dispatch<SetStateAction<number>>
+    setScrollLeft: Dispatch<SetStateAction<number>>
 }
 
 const SLIDES_PER_VIEW = 3
 
-function Slider({ items, setSlideWidth }: SliderProps) {
+function Slider({ items, offsetX, setSlideWidth, setScrollLeft }: SliderProps) {
     const swiperRef = useRef<TSwiper>()
+    const paginationBulletRef = useRef<HTMLSpanElement[]>([])
+    const paginationBulletsCoords = useRef<number[]>([])
 
     function onImagesReady() {
         if (!swiperRef.current) return
@@ -20,8 +24,19 @@ function Slider({ items, setSlideWidth }: SliderProps) {
         setSlideWidth(slideWidth)
     }
 
+    function onSlideChange() {
+        if (!swiperRef.current) return
+        const { transform } = swiperRef.current.wrapperEl.style
+        const match = transform.match(/-?\d+(\.\d+)?px/);
+        if (!match) return;
+
+        const scrollLeft = Math.abs(Number(match[0].replace('px', '')))
+        setScrollLeft(scrollLeft)
+    }
+
     return (
         <Swiper
+            onSlideChange={onSlideChange}
             onSwiper={(swiper) => {
                 console.log(swiper)
                 swiperRef.current = swiper as TSwiper

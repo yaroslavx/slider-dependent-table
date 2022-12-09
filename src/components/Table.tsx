@@ -1,10 +1,14 @@
-import { Fragment } from "react"
+import { Dispatch, Fragment, SetStateAction, UIEventHandler, useCallback, useEffect, useRef } from "react"
+import useDebounce from "../hooks/useDebounce"
 import { Items } from "../types"
 
 
 type TableProps = {
     items: Items
     slideWidth: number
+    scrollLeft: number
+    setOffsetX: Dispatch<SetStateAction<number>>
+
 }
 
 const FEATUTE_NAMES = [
@@ -15,10 +19,42 @@ const FEATUTE_NAMES = [
     "Title N5",
 ]
 
-function Table({ items, slideWidth }: TableProps) {
+const ON_SCROLL_DELAY = 250;
+
+function Table({ items, slideWidth, scrollLeft, setOffsetX }: TableProps) {
+    const tableWrapperRef = useRef<HTMLDivElement | null>(null)
+    const tableRef = useRef<HTMLTableElement | null>(null)
+    const featureNameRefs = useRef<HTMLSpanElement[]>([])
+
+    useEffect(() => {
+        if (!tableRef.current) return
+
+        featureNameRefs.current = [
+            ...tableRef.current.querySelectorAll('feature-name')
+        ] as HTMLSpanElement[]
+    }, [])
+
+    useEffect(() => {
+        if (!tableWrapperRef.current || featureNameRefs.current.length) return
+
+        tableWrapperRef.current.scrollLeft = scrollLeft
+
+        featureNameRefs.current.forEach(element => {
+            element.style.left = `${scrollLeft}px`
+        })
+    }, [scrollLeft])
+
+    const onScroll: UIEventHandler<HTMLDivElement> = useCallback(() => {
+        if (!tableRef.current) return
+        const { x } = tableRef.current.getBoundingClientRect()
+        setOffsetX(Math.abs(x))
+    }, [])
+
+    const onDebounceScroll = useDebounce(onScroll, ON_SCROLL_DELAY)
+
     return (
-        <div className="table-wrapper">
-            <table>
+        <div className="table-wrapper" ref={tableWrapperRef} onScroll={onDebounceScroll}>
+            <table ref={tableRef}>
                 <tbody>
                     {items.map((item, index) => (
                         <Fragment key={item.id}>
