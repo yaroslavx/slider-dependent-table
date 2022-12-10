@@ -1,67 +1,95 @@
-import { Dispatch, SetStateAction, useRef } from "react";
+import { useEffect, useRef } from "react";
 import { Navigation, Pagination } from "swiper";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Items, TSwiper } from "../types";
 
-type SliderProps = {
-    items: Items
-    offsetX: number
-    setSlideWidth: Dispatch<SetStateAction<number>>
-    setScrollLeft: Dispatch<SetStateAction<number>>
-}
+type Props = {
+    items: Items;
+    setSlideWidth: React.Dispatch<React.SetStateAction<number>>;
+    setScrollLeft: React.Dispatch<React.SetStateAction<number>>;
+    offsetX: number;
+};
 
-const SLIDES_PER_VIEW = 3
+const SLIDES_PER_VIEW = 3;
 
-function Slider({ items, offsetX, setSlideWidth, setScrollLeft }: SliderProps) {
-    const swiperRef = useRef<TSwiper>()
-    const paginationBulletRef = useRef<HTMLSpanElement[]>([])
-    const paginationBulletsCoords = useRef<number[]>([])
+function Slider({ items, setSlideWidth, setScrollLeft, offsetX }: Props) {
+    const swiperRef = useRef<TSwiper>();
+    const slidesGrid = useRef<number[]>([]);
 
-    function onImagesReady() {
-        if (!swiperRef.current) return
+    const onImagesReady = () => {
+        if (!swiperRef.current) return;
 
         const slideWidth = swiperRef.current.slides[0].swiperSlideSize;
-        setSlideWidth(slideWidth)
-    }
 
-    function onSlideChange() {
-        if (!swiperRef.current) return
-        const { transform } = swiperRef.current.wrapperEl.style
-        const match = transform.match(/-?\d+(\.\d+)?px/);
-        if (!match) return;
+        slidesGrid.current = swiperRef.current.slidesGrid;
 
-        const scrollLeft = Math.abs(Number(match[0].replace('px', '')))
-        setScrollLeft(scrollLeft)
-    }
+        setSlideWidth(slideWidth);
+    };
+
+    const onSlideChange = () => {
+        if (!swiperRef.current) return;
+
+        const scrollLeft = Math.abs(swiperRef.current.translate);
+        setScrollLeft(scrollLeft);
+    };
+
+    useEffect(() => {
+        if (!swiperRef.current) return;
+
+        let min = 0;
+        let i = 0;
+
+        for (const j in slidesGrid.current) {
+            const dif = Math.abs(slidesGrid.current[j] - offsetX);
+
+            if (dif === 0) {
+                min = 0;
+                i = 0;
+                break;
+            }
+
+            if (dif !== 0 && (min === 0 || dif < min)) {
+                min = dif;
+                i = Number(j);
+            }
+        }
+
+        if (items[i]) {
+            swiperRef.current.slideTo(i);
+        }
+    }, [offsetX]);
 
     return (
         <Swiper
-            onSlideChange={onSlideChange}
             onSwiper={(swiper) => {
-                console.log(swiper)
-                swiperRef.current = swiper as TSwiper
+                console.log(swiper);
+
+                swiperRef.current = swiper as TSwiper;
             }}
-            onImagesReady={onImagesReady}
             modules={[Navigation, Pagination]}
             navigation={SLIDES_PER_VIEW < items.length}
-            pagination={SLIDES_PER_VIEW < items.length ? {
-                clickable: true
-            } : undefined}
+            onImagesReady={onImagesReady}
+            onSlideChange={onSlideChange}
+            pagination={
+                SLIDES_PER_VIEW < items.length
+                    ? {
+                        clickable: true,
+                    }
+                    : undefined
+            }
             slidesPerView={SLIDES_PER_VIEW}
         >
-            {items.map(item => (
+            {items.map((item) => (
                 <SwiperSlide key={item.id}>
-                    <img src={item.imageUrl} />
+                    <img src={item.imageUrl} alt={item.title} />
                     <div>
                         <h2>{item.title}</h2>
-                        <p>{item.price}</p>
+                        <p>{item.price} ₽</p>
                     </div>
                 </SwiperSlide>
-            )
-            )}
-
+            ))}
         </Swiper>
-    )
+    );
 }
 
-export default Slider
+export default Slider;
